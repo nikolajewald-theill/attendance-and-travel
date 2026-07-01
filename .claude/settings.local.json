@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(mkdir -p \"/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/lib/supabase\" \"/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/app/auth/callback\" \"/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/app/login\")"
+    ],
+    "additionalDirectories": [
+      "/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/lib"
+    ]
+  }
+}
