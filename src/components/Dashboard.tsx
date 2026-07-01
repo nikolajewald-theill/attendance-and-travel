@@ -2,16 +2,21 @@
 
 import { useState, useRef } from 'react';
 import { Stats, DateRange } from '@/types';
-import { DANISH_MONTHS, parseDate } from '@/lib/utils';
+import { DANISH_MONTHS, parseDate, getDefaultDateRange } from '@/lib/utils';
+import { CURRENT_CALENDAR_YEAR } from '@/hooks/useAttendance';
 import DateRangePicker from './DateRangePicker';
 import { createClient } from '@/lib/supabase/client';
 
 interface Props {
+  year: number;
   stats: Stats;
   dateRange: DateRange;
+  onYearChange: (year: number) => void;
   onVacationAllowanceChange: (n: number) => void;
   onDateRangeChange: (range: DateRange) => void;
 }
+
+const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_CALENDAR_YEAR + i);
 
 function ProgressBar({ value, target = 60 }: { value: number; target?: number }) {
   const capped = Math.min(value, 100);
@@ -56,18 +61,19 @@ function ProgressBar({ value, target = 60 }: { value: number; target?: number })
   );
 }
 
-function formatRangeLabel(range: DateRange): string {
+function formatRangeLabel(range: DateRange, year: number): string {
   const s = parseDate(range.start);
   const e = parseDate(range.end);
-  if (range.start === '2026-01-01' && range.end === '2026-12-31') {
-    return 'Hele 2026';
+  const defaultRange = getDefaultDateRange(year);
+  if (range.start === defaultRange.start && range.end === defaultRange.end) {
+    return `Hele ${year}`;
   }
   const fmt = (d: Date) =>
     `${d.getDate()}. ${DANISH_MONTHS[d.getMonth()].slice(0, 3).toLowerCase()}`;
   return `${fmt(s)} – ${fmt(e)}`;
 }
 
-export default function Dashboard({ stats, dateRange, onVacationAllowanceChange, onDateRangeChange }: Props) {
+export default function Dashboard({ year, stats, dateRange, onYearChange, onVacationAllowanceChange, onDateRangeChange }: Props) {
   const [editingVacation, setEditingVacation] = useState(false);
   const [vacationInput, setVacationInput] = useState(String(stats.vacationAllowance));
   const [showPicker, setShowPicker] = useState(false);
@@ -81,20 +87,27 @@ export default function Dashboard({ stats, dateRange, onVacationAllowanceChange,
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const defaultRange = getDefaultDateRange(year);
       const [{ data: rows }, { data: settings }] = await Promise.all([
-        supabase.from('attendance_days').select('date, day_type').eq('user_id', user.id),
-        supabase.from('user_settings')
+        supabase.from('attendance_days')
+          .select('date, day_type')
+          .eq('user_id', user.id)
+          .gte('date', defaultRange.start)
+          .lte('date', defaultRange.end),
+        supabase.from('year_settings')
           .select('vacation_allowance, date_range_start, date_range_end')
           .eq('user_id', user.id)
-          .single(),
+          .eq('year', year)
+          .maybeSingle(),
       ]);
 
       const payload = {
+        year,
         days: Object.fromEntries((rows ?? []).map((r) => [r.date, r.day_type])),
         vacationAllowance: settings?.vacation_allowance ?? 25,
         dateRange: {
-          start: settings?.date_range_start ?? '2026-01-01',
-          end: settings?.date_range_end ?? '2026-12-31',
+          start: settings?.date_range_start ?? defaultRange.start,
+          end: settings?.date_range_end ?? defaultRange.end,
         },
       };
 
@@ -102,7 +115,7 @@ export default function Dashboard({ stats, dateRange, onVacationAllowanceChange,
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'fremmøde-2026.json';
+      a.download = `fremmøde-${year}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -124,25 +137,32 @@ export default function Dashboard({ stats, dateRange, onVacationAllowanceChange,
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
+        const importYear: number = typeof parsed.year === 'number' ? parsed.year : year;
+        const importRange = getDefaultDateRange(importYear);
+
         const validTypes = new Set(['office', 'home', 'vacation', 'sick']);
         const dayRows = Object.entries(parsed.days as Record<string, string>)
           .filter(([, type]) => validTypes.has(type))
           .map(([date, day_type]) => ({ user_id: user.id, date, day_type }));
 
-        // Replace all attendance days
-        await supabase.from('attendance_days').delete().eq('user_id', user.id);
+        // Replace attendance days within the imported year only
+        await supabase.from('attendance_days')
+          .delete()
+          .eq('user_id', user.id)
+          .gte('date', importRange.start)
+          .lte('date', importRange.end);
         if (dayRows.length > 0) {
           await supabase.from('attendance_days').insert(dayRows);
         }
 
-        // Update settings if present in the file
-        await supabase.from('user_settings').update({
+        // Update that year's settings if present in the file
+        await supabase.from('year_settings').update({
           ...(typeof parsed.vacationAllowance === 'number' && {
             vacation_allowance: parsed.vacationAllowance,
           }),
           ...(parsed.dateRange?.start && { date_range_start: parsed.dateRange.start }),
           ...(parsed.dateRange?.end && { date_range_end: parsed.dateRange.end }),
-        }).eq('user_id', user.id);
+        }).eq('user_id', user.id).eq('year', importYear);
 
         window.location.reload();
       } catch {
@@ -166,16 +186,29 @@ export default function Dashboard({ stats, dateRange, onVacationAllowanceChange,
     ? Math.min((stats.vacationDaysUsed / stats.vacationAllowance) * 100, 100)
     : 0;
 
-  const isFiltered = dateRange.start !== '2026-01-01' || dateRange.end !== '2026-12-31';
+  const defaultRange = getDefaultDateRange(year);
+  const isFiltered = dateRange.start !== defaultRange.start || dateRange.end !== defaultRange.end;
 
   return (
     <>
       <div className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           {/* Title */}
-          <div className="mb-4">
-            <h1 className="text-xl font-bold text-slate-800">Fremmøde 2026</h1>
-            <p className="text-xs text-slate-500">Arbejde · Pendling · Ferie</p>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-slate-800">Fremmøde {year}</h1>
+              <p className="text-xs text-slate-500">Arbejde · Pendling · Ferie</p>
+            </div>
+            <select
+              value={year}
+              onChange={(e) => onYearChange(Number(e.target.value))}
+              aria-label="Vælg år"
+              className="text-sm font-medium border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              {YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -196,7 +229,7 @@ export default function Dashboard({ stats, dateRange, onVacationAllowanceChange,
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  {formatRangeLabel(dateRange)}
+                  {formatRangeLabel(dateRange, year)}
                 </button>
               </div>
 
@@ -269,7 +302,7 @@ export default function Dashboard({ stats, dateRange, onVacationAllowanceChange,
               <p className="text-xs text-slate-500">Svendborg ↔ København</p>
               <p className="text-xs text-slate-400 mt-1">{stats.officeDays} kontor-dage (skattemæssigt)</p>
               {isFiltered && (
-                <p className="text-xs text-blue-500 mt-1">{formatRangeLabel(dateRange)}</p>
+                <p className="text-xs text-blue-500 mt-1">{formatRangeLabel(dateRange, year)}</p>
               )}
               <div className="mt-3 pt-3 border-t border-slate-200 grid grid-cols-2 gap-2 text-center">
                 <div>
@@ -339,6 +372,7 @@ export default function Dashboard({ stats, dateRange, onVacationAllowanceChange,
 
       {showPicker && (
         <DateRangePicker
+          year={year}
           current={dateRange}
           onApply={onDateRangeChange}
           onClose={() => setShowPicker(false)}

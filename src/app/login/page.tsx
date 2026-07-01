@@ -9,7 +9,7 @@ export default function LoginPage({
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 w-full max-w-sm text-center space-y-6">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-slate-800">Fremmøde 2026</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Fremmøde</h1>
           <p className="text-sm text-slate-500">Log ind for at se og redigere dit fremmøde</p>
         </div>
 

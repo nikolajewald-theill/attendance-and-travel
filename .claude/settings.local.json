@@ -3,7 +3,25 @@
     "allow": [
       "Bash(npm run:*)",
       "Bash(pkill -f \"next dev\")",
-      "Bash(mkdir -p \"/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/lib/supabase\" \"/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/app/auth/callback\" \"/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/app/login\")"
+      "Bash(mkdir -p \"/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/lib/supabase\" \"/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/app/auth/callback\" \"/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/app/login\")",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(timeout 5 npm run lint)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(which chromium-cli *)",
+      "Read(//private/tmp/claude-501/bundled-skills/**)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(npx --yes playwright --help)",
+      "Bash(mkdir -p /private/tmp/claude-501/-Users-nikolajfrandsen-Desktop-Claude-Code-Learning-Project-2/0677ba6d-544e-4344-9e39-4e75a0c7a4c3/scratchpad)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1280,900 http://localhost:3001/login login-desktop.png)",
+      "Bash(npx --yes playwright screenshot --viewport-size=380,800 http://localhost:3001/login login-mobile.png)",
+      "Bash(npx --yes playwright install chromium)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(node check-login.mjs)",
+      "Bash(echo \"exit: $?\")"
     ],
     "additionalDirectories": [
       "/Users/nikolajfrandsen/Desktop/Claude Code Learning/Project 2/src/lib"

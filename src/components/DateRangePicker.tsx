@@ -10,9 +10,11 @@ import {
   isHoliday,
   getHolidayName,
   parseDate,
+  getDefaultDateRange,
 } from '@/lib/utils';
 
 interface Props {
+  year: number;
   current: DateRange;
   onApply: (range: DateRange) => void;
   onClose: () => void;
@@ -25,7 +27,7 @@ function formatShort(dateStr: string): string {
 
 type PickStep = 'start' | 'end';
 
-export default function DateRangePicker({ current, onApply, onClose }: Props) {
+export default function DateRangePicker({ year, current, onApply, onClose }: Props) {
   // Which month pair is shown (0 = Jan/Feb, 1 = Mar/Apr, …)
   const [viewIndex, setViewIndex] = useState(0);
 
@@ -95,8 +97,9 @@ export default function DateRangePicker({ current, onApply, onClose }: Props) {
   };
 
   const handleReset = () => {
-    setTempStart('2026-01-01');
-    setTempEnd('2026-12-31');
+    const defaultRange = getDefaultDateRange(year);
+    setTempStart(defaultRange.start);
+    setTempEnd(defaultRange.end);
     setStep('start');
   };
 
@@ -218,7 +221,7 @@ export default function DateRangePicker({ current, onApply, onClose }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4 pb-4">
           {[monthA, monthB].map((month) => {
             if (month > 11) return null;
-            const cells = buildMonthGrid(2026, month);
+            const cells = buildMonthGrid(year, month);
 
             return (
               <div key={month}>
@@ -241,7 +244,7 @@ export default function DateRangePicker({ current, onApply, onClose }: Props) {
                   {cells.map((day, idx) => {
                     if (day === null) return <div key={`e-${idx}`} className="h-7" />;
 
-                    const dateStr = `2026-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const weekend = isWeekend(dateStr);
                     const holiday = isHoliday(dateStr);
                     const holidayName = getHolidayName(dateStr);
@@ -279,7 +282,7 @@ export default function DateRangePicker({ current, onApply, onClose }: Props) {
             onClick={handleReset}
             className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
           >
-            Hele 2026
+            Hele {year}
           </button>
           <div className="flex gap-2">
             <button

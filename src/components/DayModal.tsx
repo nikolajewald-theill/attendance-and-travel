@@ -65,7 +65,7 @@ export default function DayModal({ dateStr, currentType, onSelect, onClose }: Pr
             <div>
               <p className="text-slate-400 text-xs uppercase tracking-widest">{weekday}</p>
               <h2 className="text-2xl font-bold mt-0.5">
-                {day}. {month} 2026
+                {day}. {month} {date.getFullYear()}
               </h2>
               {holiday && (
                 <span className="inline-block mt-1 text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full">

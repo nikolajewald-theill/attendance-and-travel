@@ -8,10 +8,12 @@ import SignOutButton from '@/components/SignOutButton';
 export default function Home() {
   const {
     days,
+    year,
     stats,
     dateRange,
     hydrated,
     setDayType,
+    setYear,
     setVacationAllowance,
     setDateRange,
   } = useAttendance();
@@ -29,15 +31,17 @@ export default function Home() {
       <div className="fixed top-2 right-3 z-50">
         <SignOutButton />
       </div>
-      <div className="sticky top-0 z-40">
+      <div className="md:sticky md:top-0 z-40">
         <Dashboard
+          year={year}
           stats={stats}
           dateRange={dateRange}
+          onYearChange={setYear}
           onVacationAllowanceChange={setVacationAllowance}
           onDateRangeChange={setDateRange}
         />
       </div>
-      <Calendar days={days} onDayType={setDayType} />
+      <Calendar year={year} days={days} onDayType={setDayType} />
     </main>
   );
 }

@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Fremmøde 2026',
-  description: 'Spor arbejdsfremmøde, pendling og ferie for 2026',
+  title: 'Fremmøde',
+  description: 'Spor arbejdsfremmøde, pendling og ferie',
 };
 
 export default function RootLayout({

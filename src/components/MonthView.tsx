@@ -12,6 +12,7 @@ import {
 } from '@/lib/utils';
 
 interface Props {
+  year: number;
   month: number; // 0-indexed
   days: Record<string, DayType>;
   isHidden: boolean;
@@ -20,11 +21,11 @@ interface Props {
 }
 
 /** Count day-types for a single month (used in collapsed summary) */
-function getMonthSummary(month: number, days: Record<string, DayType>) {
-  const daysInMonth = new Date(2026, month + 1, 0).getDate();
+function getMonthSummary(year: number, month: number, days: Record<string, DayType>) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
   let office = 0, home = 0, vacation = 0, sick = 0;
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `2026-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const t = days[dateStr];
     if (t === 'office') office++;
     else if (t === 'home') home++;
@@ -34,13 +35,13 @@ function getMonthSummary(month: number, days: Record<string, DayType>) {
   return { office, home, vacation, sick };
 }
 
-export default function MonthView({ month, days, isHidden, onDayClick, onToggleHide }: Props) {
-  const cells = buildMonthGrid(2026, month);
+export default function MonthView({ year, month, days, isHidden, onDayClick, onToggleHide }: Props) {
+  const cells = buildMonthGrid(year, month);
   const monthName = DANISH_MONTHS[month];
 
   // Collapsed view
   if (isHidden) {
-    const { office, home, vacation, sick } = getMonthSummary(month, days);
+    const { office, home, vacation, sick } = getMonthSummary(year, month, days);
     const hasData = office + home + vacation + sick > 0;
 
     return (
@@ -112,7 +113,7 @@ export default function MonthView({ month, days, isHidden, onDayClick, onToggleH
             return <div key={`empty-${idx}`} className="aspect-square" />;
           }
 
-          const dateStr = `2026-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const weekend = isWeekend(dateStr);
           const holiday = isHoliday(dateStr);
           const holidayName = getHolidayName(dateStr);

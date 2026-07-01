@@ -1,5 +1,5 @@
 import { DayType, Stats, DateRange } from '@/types';
-import { holidayMap } from '@/lib/holidays';
+import { getHolidayMapForYear } from '@/lib/holidays';
 
 export const DANISH_MONTHS = [
   'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
@@ -31,12 +31,14 @@ export function isWeekend(dateStr: string): boolean {
 
 /** Returns true if the date string is a Danish public holiday */
 export function isHoliday(dateStr: string): boolean {
-  return holidayMap.has(dateStr);
+  const year = Number(dateStr.slice(0, 4));
+  return getHolidayMapForYear(year).has(dateStr);
 }
 
 /** Returns holiday name or null */
 export function getHolidayName(dateStr: string): string | null {
-  return holidayMap.get(dateStr) ?? null;
+  const year = Number(dateStr.slice(0, 4));
+  return getHolidayMapForYear(year).get(dateStr) ?? null;
 }
 
 /** Returns true if this is a "working day" (weekday, non-holiday) */
@@ -67,18 +69,33 @@ export function buildMonthGrid(year: number, month: number): (number | null)[] {
   return cells;
 }
 
-export const DEFAULT_DATE_RANGE: DateRange = {
-  start: '2026-01-01',
-  end: '2026-12-31',
-};
+/** Returns the full-year default date range (Jan 1 – Dec 31) for a given year */
+export function getDefaultDateRange(year: number): DateRange {
+  return { start: `${year}-01-01`, end: `${year}-12-31` };
+}
+
+/** Rebuilds a date range in a new year, keeping the same month/day (clamps Feb 29 -> Feb 28) */
+export function reanchorDateRangeToYear(range: DateRange, year: number): DateRange {
+  const reanchor = (dateStr: string): string => {
+    const [, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(year, m - 1, d);
+    // If day rolled over (e.g. Feb 29 in a non-leap year), clamp to the last day of that month
+    if (date.getMonth() !== m - 1) {
+      date.setDate(0); // last day of the previous month
+    }
+    return toDateString(date);
+  };
+  return { start: reanchor(range.start), end: reanchor(range.end) };
+}
 
 /** Compute all statistics, optionally scoped to a date range */
 export function computeStats(
   days: Record<string, DayType>,
   vacationAllowance: number,
-  range: DateRange = DEFAULT_DATE_RANGE
+  range: DateRange,
+  year: number
 ): Stats {
-  const allDates = getAllDatesInYear(2026).filter(
+  const allDates = getAllDatesInYear(year).filter(
     (d) => d >= range.start && d <= range.end
   );
 
